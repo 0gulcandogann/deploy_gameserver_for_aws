@@ -1,102 +1,110 @@
-# 🕹️ Minecraft Server on AWS GameLift (Ansible Playbook)
+# ☁️ Deploying Minecraft Server to AWS GameLift via Ansible Automation Platform
 
-This repository contains an **Ansible playbook** to automate the deployment of a **Vanilla Minecraft server** on **AWS GameLift** — Amazon’s managed service for deploying, operating, and scaling dedicated game servers.
-
----
-
-## 🚀 Overview
-
-This playbook provisions the following AWS resources:
-- **IAM Roles & Policies** – for GameLift access and EC2 instance permissions  
-- **S3 Bucket** – to store Minecraft server build files and configuration  
-- **Build Setup** – prepares the Minecraft server build for GameLift  
-- **GameLift Fleet** – deploys and manages the game server infrastructure  
-- **Auto Scaling** – enables elastic capacity scaling based on player demand  
-
-The entire process runs locally via **Ansible**, connecting to AWS APIs using your credentials.
+Bu repo, **Ansible Automation Platform (AAP / AWX)** üzerinden **Vanilla Minecraft sunucusunu AWS GameLift’e deploy etmek** için hazırlanmış bir playbook içeriyor.  
+Amaç, tüm AWS tarafındaki işlemleri (IAM, S3, GameLift Fleet, Autoscaling) tamamen otomatik hale getirmek.  
+Yani `ansible-playbook` komutlarıyla uğraşmadan, işleri AAP’in üstlenmesini sağlıyoruz.
 
 ---
 
-## 🧩 File Structure
+## 🎯 Ne Yaptık
 
-```
-main.yaml                   # Main playbook entry point
-core/
- ├── vars/main.yaml          # Variable definitions (region, game build, etc.)
- └── roles/
-      ├── iam/               # IAM setup tasks
-      ├── s3/                # S3 bucket and uploads
-      ├── build/             # Minecraft build packaging and upload
-      ├── fleet/             # GameLift Fleet creation and configuration
-      └── autoscaling/       # Auto scaling policies for GameLift
-```
+Bu playbook temelde şunları yapıyor:
+
+- AWS üzerinde GameLift için gerekli **IAM rollerini ve politikaları** oluşturur.  
+- **S3 bucket’ı** açar ve Minecraft server build’ini oraya yükler.  
+- GameLift’e **build** kaydını ekler, **Fleet** oluşturur.  
+- Son olarak, **Autoscaling** politikalarını ayarlar.  
+
+Yani “lokalde 20 komutla yapacağın işi” AAP’te tek bir Job Template haline getiriyoruz.
 
 ---
 
-## ⚙️ Requirements
+## ⚙️ Gereksinimler
 
-Before running this playbook, ensure you have:
+Bu setup’ı çalıştırmak için şunlara ihtiyacın var:
 
-- **AWS CLI** configured with admin-level permissions  
-- **Ansible** installed (≥ v2.10)  
-- **Python 3.x** and **boto3** installed  
-- Access to an **AWS account** with GameLift enabled in your desired region  
+- AWS hesabı (GameLift aktif olmalı)
+- IAM kullanıcı/rol (gerekli izinler: `gamelift:*`, `iam:*`, `ec2:*`, `s3:*`, `autoscaling:*`)
+- AAP (Ansible Automation Platform) ya da açık kaynak AWX kurulumu
+- AWS CLI ile test edilmiş bir credential (AAP içine ekleyeceğiz)
 
-Install dependencies:
+---
+
+## 🧠 Kurulum Adımları
+
+### 1️⃣ Reponun İçeriğini İçeri Aktar
+
 ```bash
-pip install boto3 botocore ansible
+git clone https://github.com/<your-repo>/minecraft-gamelift.git
 ```
 
----
-
-## 🧠 Usage
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/<your-repo>/minecraft-gamelift.git
-   cd minecraft-gamelift
-   ```
-
-2. Edit the `core/vars/main.yaml` file and configure:
-   ```yaml
-   aws_region: eu-central-1
-   game_name: "minecraft-vanilla"
-   instance_type: "c5.large"
-   build_path: "/path/to/minecraft-server"
-   ```
-
-3. Run the playbook:
-   ```bash
-   ansible-playbook main.yaml
-   ```
-
-4. Once complete, check your GameLift console:
-   - A new **Build** and **Fleet** will appear.
-   - Fleet status should eventually move to **Active**.
+Ardından, `main.yaml` ve `core/` dizinlerini olduğu gibi AAP’e upload et.  
+AWX / AAP’te bir **Project** oluştur:
+- Type: Git
+- SCM URL: repo linki
+- Branch: main (veya senin branch’in)
 
 ---
 
-## 🔧 Cleanup
+### 2️⃣ AWS Credential Ekle
 
-To avoid unnecessary AWS costs:
-```bash
-ansible-playbook destroy.yaml
-```
-*(If you have a cleanup playbook; otherwise delete resources via AWS Console.)*
+AAP Dashboard’da:  
+**Credentials → Add → Amazon Web Services**  
+- Access Key ID
+- Secret Access Key
+- Default region (örnek: `eu-central-1`)
 
----
-
-## 🛡️ Notes
-
-- The playbook currently deploys a **Vanilla Minecraft server**.  
-- You can extend it to support **Spigot**, **Paper**, or **Fabric** builds by modifying the `core.roles.build` role.  
-- Ensure your AWS credentials have permissions for:  
-  `gamelift:*`, `iam:*`, `ec2:*`, `s3:*`, and `autoscaling:*`.  
+Sonra bu credential’ı playbook’la ilişkilendireceğiz.
 
 ---
 
-## 📚 References
+### 3️⃣ Job Template Oluştur
 
-- [AWS GameLift Developer Guide](https://docs.aws.amazon.com/gamelift/latest/developerguide/)
-- [Ansible AWS Collection](https://docs.ansible.com/ansible/latest/collections/amazon/aws/)
-- [Minecraft Server Setup Guide](https://minecraft.fandom.com/wiki/Tutorials/Setting_up_a_server)
+AAP’te yeni bir Job Template ekle:
+
+| Alan | Değer |
+|------|--------|
+| **Name** | Minecraft AWS GameLift Deploy |
+| **Inventory** | localhost |
+| **Project** | minecraft-gamelift |
+| **Playbook** | main.yaml |
+| **Credentials** | AWS Credentials (az önce eklediğin) |
+
+İstersen “Prompt on launch” seçeneğini aktif bırak, böylece her run’da parametreleri değiştirebilirsin.
+
+---
+
+### 4️⃣ Playbook’u Çalıştır
+
+Run tuşuna bastığında:
+- AAP, senin playbook’unu alır.  
+- AWS tarafında IAM, S3, Build, Fleet ve Autoscaling’i sırasıyla oluşturur.  
+- Tüm log’lar AAP Job Output kısmında görünür.
+
+Fleet’in **“Active”** hale gelmesi birkaç dakika sürebilir.  
+Sonrasında AWS GameLift console’a gidip build’in başarıyla deploy edildiğini görebilirsin.
+
+---
+
+## 🔧 Temizlik (Cleanup)
+
+AWS maliyetlerinden kaçınmak için:
+- Eğer `destroy.yaml` varsa AAP üzerinden aynı şekilde çalıştır.  
+- Yoksa AWS Console’dan oluşturulan kaynakları (Fleet, Build, IAM, S3) manuel temizle.
+
+---
+
+## 💡 Notlar
+
+- Şu anda **Vanilla Minecraft server** için ayarlandı.  
+- `core.roles.build` kısmını değiştirerek **Paper**, **Spigot** veya **Fabric** build’leri ekleyebilirsin.  
+- AAP’te bir **Schedule** ekleyip otomatik olarak deploy veya cleanup yaptırmak da mümkün.  
+- Eğer daha ileri seviye entegrasyon istiyorsan, bu yapı kolayca **Ansible Operator**’a dönüştürülebilir.
+
+---
+
+## 📚 Referanslar
+
+- [AWS GameLift Documentation](https://docs.aws.amazon.com/gamelift/latest/developerguide/)
+- [Ansible Automation Platform Docs](https://docs.ansible.com/automation-controller/latest/html/userguide/)
+- [Minecraft Dedicated Server Setup](https://minecraft.fandom.com/wiki/Tutorials/Setting_up_a_server)
