@@ -160,7 +160,7 @@ jobs:
           # Uncomment the line below ONLY if your AAP server 
           # uses a self-signed SSL certificate.
           # validate_certs: false
-
+```
 ### Step 5: Push to Deploy!
 
 Commit and push the new `.github/workflows/deploy_minecraft.yml` file to your `main` branch.
