@@ -1,0 +1,13 @@
+---
+- name: Create S3 bucket for Minecraft builds
+  amazon.aws.s3_bucket:
+    name: "{{ s3_bucket_name }}"
+    state: present
+    region: "{{ aws_region }}"
+
+- name: Upload Minecraft server build
+  amazon.aws.s3_object:
+    bucket: "{{ s3_bucket_name }}"
+    object: "minecraft_server.zip"
+    src: "{{ playbook_dir }}/minecraft_server.zip"
+    mode: put

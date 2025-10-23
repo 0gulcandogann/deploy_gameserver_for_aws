@@ -1,0 +1,10 @@
+---
+- name: Create a target-based autoscaling policy for the fleet
+  community.aws.gamelift_fleet_auto_scaling_policy:
+    name: "MinecraftAutoScale"
+    fleet_id: "{{ gamelift_fleet_id }}"
+    policy_type: "TargetBased"
+    target_configuration:
+      target_value: 25
+      target_value_dimension: PercentAvailableGameSessions
+  register: autoscaling_policy

@@ -1,0 +1,40 @@
+---
+- name: Create IAM role for GameLift to access S3
+  amazon.aws.iam_role:
+    name: "GameLiftAccessS3Role"
+    assume_role_policy_document: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {"Service": "gamelift.amazonaws.com"},
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      }
+  register: gamelift_iam_role
+
+- name: Create policy for S3 access
+  amazon.aws.iam_policy:
+    name: "GameLiftS3AccessPolicy"
+    state: present
+    policy_document: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:PutObject", "s3:ListBucket"],
+            "Resource": "*"
+          }
+        ]
+      }
+  register: s3_policy
+
+- name: Attach S3 policy to role
+  amazon.aws.iam_policy_attachment:
+    name: "AttachS3ToGameLift"
+    roles:
+      - "{{ gamelift_iam_role.role.name }}"
+    policy_arn: "{{ s3_policy.policy.arn }}"

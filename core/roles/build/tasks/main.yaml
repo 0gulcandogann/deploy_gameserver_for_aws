@@ -1,0 +1,19 @@
+---
+- name: Look up current AWS account id
+  community.aws.aws_caller_facts:
+  register: caller
+
+- name: Create GameLift build
+  community.aws.gamelift_build:
+    name: "{{ gamelift_build_name }}"
+    operating_system: "AMAZON_LINUX_2"
+    storage_location:
+      bucket: "{{ s3_bucket_name }}"
+      key: "minecraft_server.zip"
+      role_arn: "arn:aws:iam::{{ caller.account_id }}:role/GameLiftAccessS3Role"
+    state: present
+  register: gamelift_build
+
+- name: Save build id
+  set_fact:
+    gamelift_build_id: "{{ gamelift_build.build.id }}"

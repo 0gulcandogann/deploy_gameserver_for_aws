@@ -1,0 +1,21 @@
+---
+- name: Create GameLift fleet for Minecraft
+  community.aws.gamelift_fleet:
+    name: "{{ gamelift_fleet_name }}"
+    build_id: "{{ gamelift_build_id }}"
+    instance_type: "{{ instance_type }}"
+    ec2_inbound_permissions:
+      - from_port: "{{ minecraft_port }}"
+        to_port: "{{ minecraft_port }}"
+        protocol: "TCP"
+    runtime_configuration:
+      server_processes:
+        - launch_path: "./start.sh"
+          concurrent_executions: 1
+    desired_instances: "{{ desired_instances }}"
+    new_game_session_protection_policy: "NoProtection"
+  register: gamelift_fleet
+
+- name: Save fleet id
+  set_fact:
+    gamelift_fleet_id: "{{ gamelift_fleet.fleet.id }}"

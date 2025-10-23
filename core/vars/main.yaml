@@ -1,0 +1,9 @@
+aws_region: "eu-central-1"
+s3_bucket_name: "minecraft-gamelift-builds"
+gamelift_build_name: "minecraft-vanilla-build"
+gamelift_fleet_name: "minecraft-vanilla-fleet"
+minecraft_port: 25565
+instance_type: "c6i.large"
+desired_instances: 1
+min_instances: 1
+max_instances: 3

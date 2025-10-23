@@ -1,0 +1,14 @@
+---
+- name: Deploy Minecraft Server to AWS GameLift (Vanilla)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - core/vars/main.yaml
+
+  roles:
+    - role: core.roles.iam
+    - role: core.roles.s3
+    - role: core.roles.build
+    - role: core.roles.fleet
+    - role: core.roles.autoscaling
