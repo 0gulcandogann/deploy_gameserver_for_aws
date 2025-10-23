@@ -1,0 +1,2 @@
+# deploy_gameserver_for_aws
+deploy_gameserver_for_aws
