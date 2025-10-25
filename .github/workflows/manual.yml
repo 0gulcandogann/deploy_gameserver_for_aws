@@ -1,0 +1,37 @@
+# .github/workflows/deploy_minecraft.yml
+
+name: Deploy Minecraft to AWS GameLift
+
+# This workflow triggers on a push to the 'main' branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger-aap-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Launch AAP Job Template
+        # We use Red Hat's official Action to launch an AWX/AAP job
+        uses: redhat-actions/awx-job-launch@v2
+        with:
+          # Get the AAP host address from GitHub Secrets
+          awx_host: ${{ secrets.AWX_HOST }}
+          
+          # Get the AAP API token from GitHub Secrets
+          awx_token: ${{ secrets.AWX_TOKEN }}
+          
+          # Get the Job Template ID from GitHub Secrets
+          job_template_id: ${{ secrets.AWX_JOB_TEMPLATE_ID }}
+          
+          # Wait for the job to finish before completing
+          wait_for_job_completion: true
+          
+          # Verbosity level for logging
+          job_verbosity: 1
+          
+          # --- OPTIONAL ---
+          # Uncomment the line below ONLY if your AAP server 
+          # uses a self-signed SSL certificate.
+          # validate_certs: false
